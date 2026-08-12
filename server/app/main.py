@@ -5,11 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router as v1_router
 from app.core.config import settings
+from app.core.database import engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
+    await engine.dispose()
 
 
 app = FastAPI(
