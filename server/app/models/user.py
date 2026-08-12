@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, String, Text, func
+from sqlalchemy import Boolean, DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,9 +21,7 @@ class User(Base):
     nickname: Mapped[str | None] = mapped_column(String(64), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     display_level: Mapped[str] = mapped_column(
-        Enum("pseudonym_only", "pseudonym_with_group", name="display_level"),
-        default="pseudonym_only",
-        nullable=False,
+        String(32), default="pseudonym_only", nullable=False
     )
     allow_appear_in_network: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False

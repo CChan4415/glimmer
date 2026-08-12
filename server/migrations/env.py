@@ -15,7 +15,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", ""))
+# Escape % for configparser interpolation; strip async driver prefix
+db_url = settings.database_url.replace("+asyncpg", "").replace("%", "%%")
+config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = Base.metadata
 

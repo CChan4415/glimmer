@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,10 +17,7 @@ class AuthMethod(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
     )
-    method: Mapped[str] = mapped_column(
-        Enum("phone", "wechat", "apple", name="auth_method"),
-        nullable=False,
-    )
+    method: Mapped[str] = mapped_column(String(16), nullable=False)
     identifier: Mapped[str] = mapped_column(String(256), nullable=False)
     wechat_union_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

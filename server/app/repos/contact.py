@@ -1,5 +1,6 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.contact import Contact
 from app.models.tag import ContactTag
@@ -11,11 +12,11 @@ class ContactRepo:
 
     async def list_by_owner(self, owner_id, group: str | None = None, tag: str | None = None,
                             limit: int = 50, cursor: str | None = None):
-        stmt = select(Contact).where(Contact.owner_id == owner_id)
+        stmt = select(Contact).options(selectinload(Contact.tags)).where(Contact.owner_id == owner_id)
         if group:
             stmt = stmt.where(Contact.group == group)
         if tag:
-            stmt = stmt.join(Contact.tags).where(ContactTag.tag == tag)
+            stmt = stmt.join(Contact.tags).where(ContactTag.tag == tag).distinct()
         stmt = stmt.order_by(Contact.created_at.desc()).limit(limit + 1)
         result = await self.db.execute(stmt)
         rows = list(result.scalars().all())

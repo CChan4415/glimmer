@@ -18,6 +18,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pip install pytest pytest-asyncio httpx
       - run: ruff check app/ --ignore E501
       - run: pytest -v

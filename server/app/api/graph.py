@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -18,9 +19,11 @@ async def get_graph(
     db: AsyncSession = Depends(get_db),
 ):
     repo = ContactRepo(db)
-    # Get all 1st degree contacts
+    # Get all 1st degree contacts (eager-load tags to avoid async lazy-load)
     result = await db.execute(
-        select(Contact).where(Contact.owner_id == user.id)
+        select(Contact)
+        .options(selectinload(Contact.tags))
+        .where(Contact.owner_id == user.id)
     )
     contacts = list(result.scalars().all())
 

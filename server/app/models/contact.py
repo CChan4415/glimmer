@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,11 +21,7 @@ class Contact(Base):
     phone_hash: Mapped[str | None] = mapped_column(
         String(128), nullable=True, index=True
     )
-    group: Mapped[str] = mapped_column(
-        Enum("family", "colleague", "friend", "ungrouped", name="contact_group"),
-        default="ungrouped",
-        nullable=False,
-    )
+    group: Mapped[str] = mapped_column(String(16), default="ungrouped", nullable=False)
     is_manual: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_contacted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
