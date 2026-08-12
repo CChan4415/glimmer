@@ -36,11 +36,16 @@ class NetworkRepo:
         if not friend_allows_contacts:
             return [], 0
 
+        # SQLite 需要 UUID 对象绑定 Uuid 列；字符串在 Postgres 也兼容
+        import uuid as _uuid
+        owner_uuid = owner_id if isinstance(owner_id, _uuid.UUID) else _uuid.UUID(owner_id)
+        friend_uuid = friend_id if isinstance(friend_id, _uuid.UUID) else _uuid.UUID(friend_id)
+
         # Find my contacts to compute mutual count
         my_contact_hashes = set()
         my_result = await self.db.execute(
             select(Contact.phone_hash).where(
-                Contact.owner_id == owner_id,
+                Contact.owner_id == owner_uuid,
                 Contact.phone_hash != None,
             )
         )
@@ -51,7 +56,7 @@ class NetworkRepo:
         # Get friend's contacts
         result = await self.db.execute(
             select(Contact)
-            .where(Contact.owner_id == friend_id)
+            .where(Contact.owner_id == friend_uuid)
             .limit(limit + 1)
         )
         friend_contacts = list(result.scalars().all())
