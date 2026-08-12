@@ -11,8 +11,10 @@ export default function GraphPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
-  const [secondDegree, setSecondDegree] = useState(null)
+  const [secondDegreeNodes, setSecondDegreeNodes] = useState([])
+  const [expandMsg, setExpandMsg] = useState('')
   const [expandedIds, setExpandedIds] = useState(new Set())
+  const [expanding, setExpanding] = useState(false)
 
   const loadGraph = useCallback(async () => {
     try {
@@ -31,31 +33,50 @@ export default function GraphPage() {
 
   const handleNodeClick = (node) => {
     setSelected(node)
-    setSecondDegree(null)
+    setExpandMsg('')
+  }
+
+  const collapseAll = () => {
+    setSelected(null)
+    setSecondDegreeNodes([])
+    setExpandedIds(new Set())
+    setExpandMsg('')
   }
 
   const expandSecondDegree = async (node) => {
+    setExpandMsg('')
+    setExpanding(true)
     if (!node.is_registered) {
-      setSecondDegree({ empty: true, message: '对方尚未注册，无法查看 TA 的朋友' })
+      setExpanding(false)
+      setExpandMsg('对方尚未注册，无法查看 TA 的朋友')
       return
     }
     try {
       const res = await api.get(`/me/network/second-degree/${node.id}`)
-      setSecondDegree(res.data)
+      const nodes = res.data.data || []
+      // Attach source contact id so the graph can draw the edge
+      const withSource = nodes.map((n) => ({ ...n, source_contact_id: node.id }))
+      setSecondDegreeNodes((prev) => [...prev, ...withSource])
       if (!expandedIds.has(node.id)) {
         setExpandedIds(new Set([...expandedIds, node.id]))
       }
+      if (nodes.length === 0) {
+        setExpandMsg('TA 的朋友暂未公开')
+      }
     } catch (e) {
-      setSecondDegree({ empty: true, message: e.response?.data?.detail || '加载失败' })
+      setExpandMsg(e.response?.data?.detail || '加载失败')
+    } finally {
+      setExpanding(false)
     }
   }
 
   const expandAll = async () => {
     const registered = graphData?.nodes.filter((n) => n.is_registered && n.degree === 1) || []
     if (registered.length === 0) {
-      setSecondDegree({ empty: true, message: '暂无已注册的联系人可展开' })
+      setExpandMsg('暂无已注册的联系人可展开')
       return
     }
+    setExpandMsg('')
     for (const node of registered) {
       await expandSecondDegree(node)
     }
@@ -66,8 +87,10 @@ export default function GraphPage() {
       <header className="topbar">
         <div className="brand">流萤 Glimmer</div>
         <div className="actions">
-          <button className="btn-ghost" onClick={expandAll}>展开全部 2 度</button>
-          <button className="btn-ghost" onClick={() => setSelected(null)}>收起详情</button>
+          <button className="btn-ghost" onClick={expandAll} disabled={expanding}>
+            {expanding ? '展开中...' : '展开全部 2 度'}
+          </button>
+          <button className="btn-ghost" onClick={collapseAll}>收起全部</button>
           <span className="user-chip">{user?.nickname || '我'}</span>
           <button className="btn-ghost" onClick={logout}>退出</button>
         </div>
@@ -78,7 +101,19 @@ export default function GraphPage() {
 
       {graphData && !loading && (
         <div className="main-area">
-          <GraphView graphData={graphData} onNodeClick={handleNodeClick} />
+          <div className="graph-wrap">
+            <GraphView
+              graphData={graphData}
+              secondDegreeNodes={secondDegreeNodes}
+              onNodeClick={handleNodeClick}
+            />
+            {expanding && (
+              <div className="graph-loading">
+                <span className="spinner" />
+                展开关系网中...
+              </div>
+            )}
+          </div>
 
           <aside className="side-panel">
             {!selected && (
@@ -125,23 +160,9 @@ export default function GraphPage() {
               </div>
             )}
 
-            {secondDegree && (
-              <div className="second-degree">
-                <h4>朋友的朋友</h4>
-                {secondDegree.empty ? (
-                  <p className="muted">{secondDegree.message}</p>
-                ) : (
-                  <ul>
-                    {secondDegree.data.map((n) => (
-                      <li key={n.id}>
-                        <span className="name">{n.display_name}</span>
-                        {n.group && <span className="muted"> · {GROUP_LABELS[n.group]}</span>}
-                        {n.mutual_count > 0 && <span className="mutual"> · 共同好友 {n.mutual_count}</span>}
-                        {n.is_registered && <span className="badge">已注册</span>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            {expandMsg && (
+              <div className="expand-msg">
+                <p className="muted">{expandMsg}</p>
               </div>
             )}
           </aside>

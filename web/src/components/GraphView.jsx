@@ -17,38 +17,68 @@ const GROUP_LABELS = {
   ungrouped: '未分组',
 }
 
-export default function GraphView({ graphData, onNodeClick }) {
+export default function GraphView({ graphData, secondDegreeNodes, onNodeClick }) {
   const containerRef = useRef(null)
   const cyRef = useRef(null)
 
   useEffect(() => {
     if (!graphData || !containerRef.current) return
 
-    const elements = [
-      // Nodes
-      ...graphData.nodes.map((n) => ({
-        data: {
-          id: n.id,
-          label: n.name || n.display_name,
-          group: n.group,
-          degree: n.degree,
-          isRegistered: n.is_registered,
-          nodeData: n,
-        },
-      })),
-      // Edges
-      ...graphData.edges.map((e, i) => ({
-        data: {
-          id: `e${i}`,
-          source: e.source,
-          target: e.target,
-        },
-      })),
-    ]
+    // Merge 1st-degree nodes + second-degree nodes into one element set
+    const nodes = graphData.nodes.map((n) => ({
+      data: {
+        id: n.id,
+        label: n.name || n.display_name,
+        group: n.group,
+        degree: n.degree,
+        isRegistered: n.is_registered,
+        nodeData: n,
+      },
+    }))
+
+    const edges = graphData.edges.map((e, i) => ({
+      data: {
+        id: `e${i}`,
+        source: e.source,
+        target: e.target,
+      },
+    }))
+
+    // Second-degree nodes drawn into graph (dashed border + dashed edge)
+    const secondDegreeNodesList = secondDegreeNodes || []
+    for (const n of secondDegreeNodesList) {
+      const nodeId = `sd-${n.id}`
+      // Avoid collision with existing node ids
+      if (!nodes.some((x) => x.data.id === nodeId) && !nodes.some((x) => x.data.id === n.id)) {
+        nodes.push({
+          data: {
+            id: nodeId,
+            label: n.display_name,
+            group: n.group || 'ungrouped',
+            degree: 2,
+            isRegistered: n.is_registered,
+            nodeData: { ...n, is_second_degree: true },
+          },
+        })
+      }
+      if (n.source_contact_id) {
+        const edgeId = `e2-${n.source_contact_id}-${n.id}`
+        if (!edges.some((x) => x.data.id === edgeId)) {
+          edges.push({
+            data: {
+              id: edgeId,
+              source: n.source_contact_id,
+              target: nodeId,
+              isSecondDegree: true,
+            },
+          })
+        }
+      }
+    }
 
     const cy = cytoscape({
       container: containerRef.current,
-      elements,
+      elements: [...nodes, ...edges],
       style: [
         {
           selector: 'node',
@@ -78,8 +108,8 @@ export default function GraphView({ graphData, onNodeClick }) {
           style: {
             'border-style': 'dashed',
             'border-width': 2,
-            'border-color': GROUP_COLORS.center,
-            opacity: 0.85,
+            'border-color': '#7c8aa5',
+            opacity: 0.9,
           },
         },
         {
@@ -103,6 +133,7 @@ export default function GraphView({ graphData, onNodeClick }) {
           style: {
             'line-style': 'dashed',
             'line-color': '#94a3b8',
+            width: 1,
           },
         },
       ],
@@ -127,7 +158,7 @@ export default function GraphView({ graphData, onNodeClick }) {
       cy.destroy()
       cyRef.current = null
     }
-  }, [graphData, onNodeClick])
+  }, [graphData, secondDegreeNodes, onNodeClick])
 
   return <div ref={containerRef} className="graph-canvas" />
 }

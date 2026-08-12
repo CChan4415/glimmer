@@ -88,7 +88,29 @@ body {
 }
 
 .main-area { flex: 1; display: flex; position: relative; }
-.graph-canvas { flex: 1; height: 100%; }
+.graph-wrap { flex: 1; position: relative; }
+.graph-canvas { width: 100%; height: 100%; }
+.graph-loading {
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #475569;
+  z-index: 5;
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #c7d2fe;
+  border-top-color: #4f6ef7;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .side-panel {
   width: 300px;
   border-left: 1px solid #e2e8f0;
