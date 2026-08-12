@@ -40,8 +40,8 @@ export default function GraphPage() {
       return
     }
     try {
-      const { data } = await api.get(`/me/network/second-degree/${node.id}`)
-      setSecondDegree(data.data)
+      const res = await api.get(`/me/network/second-degree/${node.id}`)
+      setSecondDegree(res.data)
       if (!expandedIds.has(node.id)) {
         setExpandedIds(new Set([...expandedIds, node.id]))
       }
